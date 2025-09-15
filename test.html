@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Audio Streaming Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        input {
+            width: 300px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .results {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .download-link {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .download-link:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 YouTube Audio Streaming Test</h1>
+        
+        <div class="test-section">
+            <h3>🔍 Search Test</h3>
+            <input type="text" id="searchQuery" placeholder="Enter search query (e.g., 'despacito')" value="despacito">
+            <button onclick="testSearch()">Search</button>
+            <div id="searchResults" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎶 Stream by Video ID</h3>
+            <input type="text" id="videoId" placeholder="Enter YouTube Video ID" value="OXm4-3Er8po">
+            <button onclick="streamById()">Stream Audio</button>
+            <div id="streamResults" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🎵 Stream by Search Query</h3>
+            <input type="text" id="streamQuery" placeholder="Enter search query" value="despacito">
+            <button onclick="streamByQuery()">Stream Audio</button>
+            <div id="queryResults" class="results"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Fixed Test Endpoint</h3>
+            <button onclick="testFixed()">Test Fixed Endpoint</button>
+            <div id="fixedResults" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        async function testSearch() {
+            const query = document.getElementById('searchQuery').value;
+            const resultsDiv = document.getElementById('searchResults');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<p style="color: red;">Please enter a search query</p>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<p>Searching...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.results && data.results.length > 0) {
+                    let html = '<h4>Search Results:</h4>';
+                    data.results.forEach(result => {
+                        html += `
+                            <div style="margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px;">
+                                <strong>${result.title}</strong><br>
+                                <small>By: ${result.author} | Duration: ${result.timestamp}</small><br>
+                                <a href="${API_BASE}/stream?id=${result.id}" class="download-link" target="_blank">
+                                    Download MP3
+                                </a>
+                            </div>
+                        `;
+                    });
+                    resultsDiv.innerHTML = html;
+                } else {
+                    resultsDiv.innerHTML = '<p>No results found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+
+        function streamById() {
+            const videoId = document.getElementById('videoId').value;
+            const resultsDiv = document.getElementById('streamResults');
+            
+            if (!videoId.trim()) {
+                resultsDiv.innerHTML = '<p style="color: red;">Please enter a video ID</p>';
+                return;
+            }
+
+            const streamUrl = `${API_BASE}/stream?id=${videoId}`;
+            resultsDiv.innerHTML = `
+                <p>Stream URL ready:</p>
+                <a href="${streamUrl}" class="download-link" target="_blank">Download MP3</a>
+                <br><br>
+                <small>URL: ${streamUrl}</small>
+            `;
+        }
+
+        function streamByQuery() {
+            const query = document.getElementById('streamQuery').value;
+            const resultsDiv = document.getElementById('queryResults');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<p style="color: red;">Please enter a search query</p>';
+                return;
+            }
+
+            const streamUrl = `${API_BASE}/stream?q=${encodeURIComponent(query)}`;
+            resultsDiv.innerHTML = `
+                <p>Stream URL ready:</p>
+                <a href="${streamUrl}" class="download-link" target="_blank">Download MP3</a>
+                <br><br>
+                <small>URL: ${streamUrl}</small>
+            `;
+        }
+
+        function testFixed() {
+            const resultsDiv = document.getElementById('fixedResults');
+            const streamUrl = `${API_BASE}/stream-fixed`;
+            
+            resultsDiv.innerHTML = `
+                <p>Fixed test endpoint ready:</p>
+                <a href="${streamUrl}" class="download-link" target="_blank">Download Test MP3</a>
+                <br><br>
+                <small>URL: ${streamUrl}</small>
+            `;
+        }
+    </script>
+</body>
+</html>
