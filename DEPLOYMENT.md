@@ -5,6 +5,7 @@ Your YouTube Audio Streaming API is ready for deployment! Here are the best opti
 ## ✅ WORKING ENDPOINTS
 
 All endpoints are now working locally:
+
 - Health Check: `http://localhost:3000/health`
 - Search: `http://localhost:3000/search?q=song+name`
 - Stream by ID: `http://localhost:3000/stream?id=VIDEO_ID`
@@ -14,6 +15,7 @@ All endpoints are now working locally:
 ## 🌐 FREE DEPLOYMENT OPTIONS
 
 ### 1. Railway (RECOMMENDED - Easiest)
+
 1. Go to https://railway.app
 2. Sign up with GitHub
 3. Click "New Project" → "Deploy from GitHub repo"
@@ -22,6 +24,7 @@ All endpoints are now working locally:
 6. You'll get a URL like: `https://your-app.railway.app`
 
 ### 2. Render
+
 1. Go to https://render.com
 2. Connect GitHub account
 3. Create "New Web Service"
@@ -31,6 +34,7 @@ All endpoints are now working locally:
    - Start Command: `npm start`
 
 ### 3. Fly.io
+
 ```bash
 # Install flyctl first
 npm install -g @flyio/flyctl
@@ -39,6 +43,7 @@ flyctl launch
 ```
 
 ### 4. Heroku
+
 ```bash
 # Install Heroku CLI first
 heroku create your-app-name
@@ -62,14 +67,14 @@ const searchUrl = `${API_BASE}/search?q=${encodeURIComponent(query)}`;
 const streamUrl = `${API_BASE}/stream?q=${encodeURIComponent(query)}`;
 
 // Example Discord.js usage:
-const { createAudioResource } = require('@discordjs/voice');
+const { createAudioResource } = require("@discordjs/voice");
 const resource = createAudioResource(streamUrl);
 ```
 
 ## 📋 DEPLOYMENT CHECKLIST
 
 - ✅ Dependencies installed
-- ✅ Server starts successfully  
+- ✅ Server starts successfully
 - ✅ Search endpoint working
 - ✅ Stream endpoints working
 - ✅ Error handling implemented
@@ -80,6 +85,7 @@ const resource = createAudioResource(streamUrl);
 ## 🔧 ENVIRONMENT VARIABLES
 
 Set these on your hosting platform:
+
 ```
 PORT=3000  # Usually auto-set by hosting platforms
 ```

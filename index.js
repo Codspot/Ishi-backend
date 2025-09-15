@@ -12,7 +12,7 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.')); // Serve static files (like test.html)
+app.use(express.static(".")); // Serve static files (like test.html)
 
 const cache = new NodeCache({ stdTTL: 60 * 5 }); // cache search results 5min
 
@@ -23,11 +23,11 @@ app.get("/", (req, res) => {
 
 // Health check endpoint
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
+  res.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    version: "1.0.0"
+    version: "1.0.0",
   });
 });
 
@@ -101,21 +101,20 @@ app.get("/stream", async (req, res) => {
       info = await ytdl.getInfo(videoId, {
         requestOptions: {
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-          }
-        }
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          },
+        },
       });
     } catch (e) {
       console.error(
         "[stream] ytdl.getInfo error:",
         e && e.message ? e.message : e
       );
-      return res
-        .status(502)
-        .json({
-          error: "failed to get video info from youtube",
-          detail: String(e && e.message ? e.message : e),
-        });
+      return res.status(502).json({
+        error: "failed to get video info from youtube",
+        detail: String(e && e.message ? e.message : e),
+      });
     }
     const title = info.videoDetails.title || "unknown";
 
@@ -133,9 +132,10 @@ app.get("/stream", async (req, res) => {
       highWaterMark: 1 << 25,
       requestOptions: {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      }
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      },
     });
 
     ytdlStream.on("error", (e) => {
@@ -145,12 +145,10 @@ app.get("/stream", async (req, res) => {
       );
       // If streaming hasn't started, send JSON error otherwise end response
       if (!res.headersSent)
-        return res
-          .status(502)
-          .json({
-            error: "error fetching media from youtube",
-            detail: String(e && e.message ? e.message : e),
-          });
+        return res.status(502).json({
+          error: "error fetching media from youtube",
+          detail: String(e && e.message ? e.message : e),
+        });
       try {
         res.end();
       } catch (ex) {}
@@ -197,12 +195,10 @@ app.get("/stream", async (req, res) => {
       err && err.stack ? err.stack : err
     );
     if (!res.headersSent)
-      res
-        .status(500)
-        .json({
-          error: "internal server error",
-          detail: String(err && err.message ? err.message : err),
-        });
+      res.status(500).json({
+        error: "internal server error",
+        detail: String(err && err.message ? err.message : err),
+      });
   }
 });
 
@@ -216,9 +212,10 @@ app.get("/stream-fixed", async (req, res) => {
     const info = await ytdl.getInfo(videoId, {
       requestOptions: {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      }
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      },
     });
     const title = info.videoDetails.title || "radhe-hansraj";
     res.setHeader(
@@ -233,9 +230,10 @@ app.get("/stream-fixed", async (req, res) => {
       highWaterMark: 1 << 25,
       requestOptions: {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-      }
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        },
+      },
     });
     ytdlStream.on("error", (e) => {
       console.error("[stream-fixed] ytdl error", e);
@@ -257,12 +255,10 @@ app.get("/stream-fixed", async (req, res) => {
           e && e.message ? e.message : e
         );
         if (!res.headersSent)
-          return res
-            .status(500)
-            .json({
-              error: "transcoding failed",
-              detail: String(e && e.message ? e.message : e),
-            });
+          return res.status(500).json({
+            error: "transcoding failed",
+            detail: String(e && e.message ? e.message : e),
+          });
       })
       .on("end", () => console.log("[stream-fixed] ffmpeg finished"));
 
@@ -270,12 +266,10 @@ app.get("/stream-fixed", async (req, res) => {
   } catch (e) {
     console.error("[stream-fixed] unexpected error", e);
     if (!res.headersSent)
-      res
-        .status(500)
-        .json({
-          error: "internal server error",
-          detail: String(e && e.message ? e.message : e),
-        });
+      res.status(500).json({
+        error: "internal server error",
+        detail: String(e && e.message ? e.message : e),
+      });
   }
 });
 
