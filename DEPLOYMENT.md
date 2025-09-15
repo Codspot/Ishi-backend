@@ -97,6 +97,60 @@ PORT=3000  # Usually auto-set by hosting platforms
 3. Test search: `https://your-deployed-url.com/search?q=test`
 4. Test streaming: `https://your-deployed-url.com/stream?q=test`
 
+## 🤖 HANDLING "CONFIRM YOU'RE NOT A BOT" ISSUES
+
+If you encounter bot detection errors:
+
+### Available Endpoints:
+- `/stream?q=song` - Standard endpoint with retry logic
+- `/stream-alt?q=song` - Enhanced anti-bot detection endpoint
+- `/stream-fixed` - Test endpoint with known working video
+
+### Solutions:
+1. **Use the `/stream-alt` endpoint** - Has enhanced headers
+2. **Retry failed requests** - Built-in retry mechanism with exponential backoff
+3. **Deploy on different servers** - Different IP addresses help
+4. **Use VPS with proxy** - Set up proxy rotation if needed
+
+### DigitalOcean Deployment with PM2:
+
+```bash
+# 1. Create droplet (Ubuntu 22.04, $5/month minimum)
+ssh root@your_droplet_ip
+
+# 2. Install dependencies
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+apt-get install -y nodejs ffmpeg nginx
+npm install -g pm2
+
+# 3. Clone and setup project
+git clone your_repo_url
+cd ishi-backend
+npm install
+
+# 4. Start with PM2
+pm2 start index.js --name "youtube-audio-api"
+pm2 startup
+pm2 save
+
+# 5. Setup firewall
+ufw allow 22 && ufw allow 80 && ufw allow 443 && ufw allow 3000 && ufw enable
+
+# 6. Optional: Setup Nginx reverse proxy
+# Edit /etc/nginx/sites-available/default to proxy port 3000
+```
+
+**Access your API at:** `http://your_droplet_ip:3000`
+
+### PM2 Management:
+```bash
+pm2 status                    # Check status
+pm2 logs youtube-audio-api    # View logs
+pm2 restart youtube-audio-api # Restart service
+pm2 stop youtube-audio-api    # Stop service
+pm2 delete youtube-audio-api  # Remove service
+```
+
 ## 💡 TIPS
 
 - Railway offers 500 hours free per month

@@ -9,6 +9,40 @@ const NodeCache = require("node-cache");
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
+// Anti-bot detection configuration
+const ytdlOptions = {
+  requestOptions: {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'Upgrade-Insecure-Requests': '1',
+    }
+  }
+};
+
+// Retry function for handling bot detection
+async function retryYtdlOperation(operation, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      console.log(`[retry] Attempt ${attempt}/${maxRetries} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        throw error;
+      }
+      
+      // Wait before retry (exponential backoff)
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.log(`[retry] Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -98,14 +132,7 @@ app.get("/stream", async (req, res) => {
     // Fetch info (may throw / network fail)
     let info;
     try {
-      info = await ytdl.getInfo(videoId, {
-        requestOptions: {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-          },
-        },
-      });
+      info = await retryYtdlOperation(() => ytdl.getInfo(videoId, ytdlOptions));
     } catch (e) {
       console.error(
         "[stream] ytdl.getInfo error:",
@@ -130,12 +157,7 @@ app.get("/stream", async (req, res) => {
       quality: "highestaudio",
       filter: "audioonly",
       highWaterMark: 1 << 25,
-      requestOptions: {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        },
-      },
+      ...ytdlOptions
     });
 
     ytdlStream.on("error", (e) => {
@@ -209,14 +231,7 @@ app.get("/stream-fixed", async (req, res) => {
     // Reuse the same approach: validate, getInfo, stream
     if (!ytdl.validateID(videoId))
       return res.status(400).json({ error: "invalid video id" });
-    const info = await ytdl.getInfo(videoId, {
-      requestOptions: {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        },
-      },
-    });
+    const info = await retryYtdlOperation(() => ytdl.getInfo(videoId, ytdlOptions));
     const title = info.videoDetails.title || "radhe-hansraj";
     res.setHeader(
       "Content-Disposition",
@@ -228,12 +243,7 @@ app.get("/stream-fixed", async (req, res) => {
       quality: "highestaudio",
       filter: "audioonly",
       highWaterMark: 1 << 25,
-      requestOptions: {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-        },
-      },
+      ...ytdlOptions
     });
     ytdlStream.on("error", (e) => {
       console.error("[stream-fixed] ytdl error", e);
@@ -270,6 +280,94 @@ app.get("/stream-fixed", async (req, res) => {
         error: "internal server error",
         detail: String(e && e.message ? e.message : e),
       });
+  }
+});
+
+// Alternative endpoint with enhanced bot detection avoidance
+app.get("/stream-alt", async (req, res) => {
+  try {
+    let videoId = req.query.id;
+    const q = (req.query.q || "").trim();
+
+    if (!videoId && !q)
+      return res.status(400).json({ error: "missing id or q param" });
+
+    // If q provided, search
+    if (!videoId && q) {
+      const r = await yts(q);
+      const first = (r.videos && r.videos[0]) || null;
+      if (!first)
+        return res.status(404).json({ error: "no video found for query" });
+      videoId = first.videoId;
+    }
+
+    if (!ytdl.validateID(videoId)) {
+      return res.status(400).json({ error: "invalid video id" });
+    }
+
+    // Enhanced options for bot detection avoidance
+    const enhancedOptions = {
+      ...ytdlOptions,
+      requestOptions: {
+        ...ytdlOptions.requestOptions,
+        headers: {
+          ...ytdlOptions.requestOptions.headers,
+          'Referer': 'https://www.youtube.com/',
+          'X-YouTube-Client-Name': '1',
+          'X-YouTube-Client-Version': '2.20210721.00.00',
+        }
+      }
+    };
+
+    let info;
+    try {
+      info = await retryYtdlOperation(() => ytdl.getInfo(videoId, enhancedOptions));
+    } catch (e) {
+      console.error("[stream-alt] ytdl.getInfo error:", e.message);
+      return res.status(502).json({
+        error: "failed to get video info from youtube",
+        detail: "Bot detection triggered. Try again later or use a different video."
+      });
+    }
+
+    const title = info.videoDetails.title || "unknown";
+    res.setHeader("Content-Disposition", `inline; filename="${sanitizeFilename(title)}.mp3"`);
+    res.setHeader("Content-Type", "audio/mpeg");
+
+    const ytdlStream = ytdl(videoId, {
+      quality: "highestaudio",
+      filter: "audioonly",
+      highWaterMark: 1 << 25,
+      ...enhancedOptions
+    });
+
+    ytdlStream.on("error", (e) => {
+      console.error("[stream-alt] ytdl stream error:", e.message);
+      if (!res.headersSent)
+        return res.status(502).json({ 
+          error: "streaming failed", 
+          detail: "Bot detection or network issue" 
+        });
+    });
+
+    const ff = ffmpeg()
+      .input(ytdlStream)
+      .noVideo()
+      .audioBitrate(128)
+      .format("mp3")
+      .on("start", (cmd) => console.log("[stream-alt] ffmpeg start"))
+      .on("error", (err) => {
+        console.error("[stream-alt] ffmpeg error:", err.message);
+        if (!res.headersSent)
+          return res.status(500).json({ error: "transcoding failed" });
+      })
+      .on("end", () => console.log("[stream-alt] ffmpeg finished"));
+
+    ff.pipe(res, { end: true });
+  } catch (e) {
+    console.error("[stream-alt] unexpected error", e);
+    if (!res.headersSent)
+      res.status(500).json({ error: "internal server error" });
   }
 });
 

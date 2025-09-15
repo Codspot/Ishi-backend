@@ -98,6 +98,13 @@
             <button onclick="testFixed()">Test Fixed Endpoint</button>
             <div id="fixedResults" class="results"></div>
         </div>
+
+        <div class="test-section">
+            <h3>🛡️ Enhanced Anti-Bot Endpoint</h3>
+            <input type="text" id="antiBotQuery" placeholder="Enter search query" value="despacito">
+            <button onclick="streamAntiBot()">Stream with Anti-Bot</button>
+            <div id="antiBotResults" class="results"></div>
+        </div>
     </div>
 
     <script>
@@ -185,6 +192,25 @@
                 <a href="${streamUrl}" class="download-link" target="_blank">Download Test MP3</a>
                 <br><br>
                 <small>URL: ${streamUrl}</small>
+            `;
+        }
+
+        function streamAntiBot() {
+            const query = document.getElementById('antiBotQuery').value;
+            const resultsDiv = document.getElementById('antiBotResults');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<p style="color: red;">Please enter a search query</p>';
+                return;
+            }
+
+            const streamUrl = `${API_BASE}/stream-alt?q=${encodeURIComponent(query)}`;
+            resultsDiv.innerHTML = `
+                <p>Enhanced Anti-Bot endpoint ready:</p>
+                <a href="${streamUrl}" class="download-link" target="_blank">Download MP3</a>
+                <br><br>
+                <small>URL: ${streamUrl}</small>
+                <br><small style="color: #666;">Uses enhanced headers to avoid bot detection</small>
             `;
         }
     </script>
